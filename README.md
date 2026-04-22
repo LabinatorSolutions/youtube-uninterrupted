@@ -33,12 +33,15 @@ YouTube automatically pauses videos after a period of inactivity and displays a 
 The extension uses a multi-layered approach for maximum reliability:
 
 ### Layer 1: CSS Injection
+
 Instantly hides the dialog using intentionally **narrow** CSS rules before JavaScript even loads. Only selectors that are exclusive to the idle dialog are used here — broad selectors that also match legitimate user-triggered dialogs (unsubscribe, delete, report) are deliberately excluded and handled by Layer 2 instead.
 
 ### Layer 2: DOM Monitoring
+
 A MutationObserver watches for the dialog being inserted into the page and hides it immediately. **Text-pattern matching is the required gate** — the extension only acts if the dialog contains known idle/pause phrasing (e.g. "Continue watching", "Still watching"). Dialogs that appear within 3 seconds of a user click are left untouched, protecting unsubscribe confirmations and similar user-initiated flows.
 
 ### Layer 3: Activity Simulation
+
 Periodically simulates minimal user activity (mouse movement event) every minute to reset YouTube's idle timer, preventing the dialog from triggering in the first place.
 
 ## Installation
@@ -48,6 +51,7 @@ Periodically simulates minimal user activity (mouse movement event) every minute
 1. **Download the Extension**
    - [**Download from Mozilla Add-ons (Recommended)**](https://addons.mozilla.org/en-US/firefox/addon/youtube-uninterrupted)
    - Or clone this repository:
+
    ```bash
    git clone https://github.com/LabinatorSolutions/youtube-uninterrupted.git
    cd youtube-uninterrupted
@@ -124,32 +128,33 @@ Periodically simulates minimal user activity (mouse movement event) every minute
 **Issue:** Dialog still appears
 
 **Solutions:**
+
 1. Verify the extension is enabled
    - Click the extension icon
    - Ensure toggle is ON
-   
+
 2. Check if extension is active on current page
    - Extension only works on `*.youtube.com` domains
    - Not in YouTube mobile app (apps don't support extensions)
-   
+
 3. Reload the YouTube page
    - Press F5 or Ctrl+R (desktop)
    - Pull down to refresh (mobile)
-   
+
 4. Check Firefox console for errors
    - Press F12 → Console tab
    - Look for errors starting with `[YouTube Uninterrupted]`
-
 
 ### Extension Icon Not Visible (Desktop)
 
 **Issue:** Can't find the extension icon
 
 **Solutions:**
+
 1. Check if extension is installed
    - Go to `about:addons`
    - Look for "YouTube Uninterrupted"
-   
+
 2. Pin the extension to toolbar
    - Right-click toolbar → Customize Toolbar
    - Drag extension icon to toolbar
@@ -159,6 +164,7 @@ Periodically simulates minimal user activity (mouse movement event) every minute
 **Issue:** Can't add extensions on Firefox Android
 
 **Solutions:**
+
 1. Ensure you're using **Firefox** (not Chrome or other browsers)
 2. Firefox for Android requires custom collections (see installation)
 3. Use Firefox Nightly for easier development/testing
@@ -197,7 +203,7 @@ That's it. No access to browsing history, no access to other sites, no backgroun
 
 ### Project Structure
 
-```
+```text
 youtube-uninterrupted/
 ├── manifest.json                    # Extension configuration
 ├── content-scripts/
@@ -216,6 +222,7 @@ youtube-uninterrupted/
 ### Building from Source
 
 1. **Clone Repository**
+
    ```bash
    git clone https://github.com/LabinatorSolutions/youtube-uninterrupted.git
    cd youtube-uninterrupted
@@ -248,11 +255,13 @@ youtube-uninterrupted/
 The extension implements four defensive layers:
 
 **Layer 1: CSS Injection (`inject-styles.css`)**
+
 - Injected at `document_start` for instant effect
 - Uses `!important` flags to override YouTube's inline styles
 - Targets multiple selectors for resilience
 
 **Layer 2: DOM Monitoring (`youtube-uninterrupted.js`)**
+
 - MutationObserver watches for dialog insertion
 - Debounced callbacks (50ms) for performance
 - Text-pattern matching is the mandatory primary gate
@@ -260,6 +269,7 @@ The extension implements four defensive layers:
 - CSS-hides confirmed dialogs (no DOM removal, keeping false positives recoverable)
 
 **Layer 3: Activity Simulation (`youtube-uninterrupted.js`)**
+
 - Dispatches mouse movement events every minute
 - Resets YouTube's idle timer
 - Prevents dialog from triggering in the first place
@@ -340,6 +350,7 @@ Developed by [Labinator](https://Labinator.com).
 This extension is designed strictly to enhance the experience for valid users who are actively listening to or watching content but cannot interact with their device (e.g., while cooking, exercising, working, or sleeping).
 
 **Please use this tool responsibly.** It is **NOT** intended to:
+
 - Artificially inflate view counts or engagement metrics
 - Abuse YouTube's bandwidth or server resources
 - Circumvent policies when no user is actually present or consuming content
@@ -351,6 +362,7 @@ We strongly encourage users to respect the platform and its creators. If you are
 This extension is not affiliated with, endorsed by, or officially connected to YouTube, Google, or Mozilla. It is an independent project created for educational purposes and personal use.
 
 The extension respects YouTube's terms of service by:
+
 - Not blocking advertisements
 - Not circumventing YouTube Premium features
 - Not downloading or modifying video content
