@@ -40,15 +40,14 @@
 			'paper-dialog'
 		],
 
-		// Selectors for dialog content to verify it's the right dialog
+		// Selectors for dialog content to verify it's the right dialog.
+		// NOTE: Keep this list NARROW. Generic selectors like '#confirm-button' and
+		// '.yt-spec-button-shape-next--call-to-action' also match legitimate
+		// user-triggered dialogs (unsubscribe, delete, report, etc.) and must NOT
+		// be included here. Text-pattern matching is the authoritative gate.
 		CONTINUE_BUTTON_SELECTORS: [
 			'yt-button-renderer[dialog-confirm]',
 			'button[aria-label*="continue" i]',
-			'button[aria-label*="Continue" i]',
-			'button[aria-label*="yes" i]',
-			'button[aria-label*="ok" i]',
-			'#confirm-button',
-			'.yt-spec-button-shape-next--call-to-action',
 			'[data-dialog-action="confirm"]'
 		],
 
@@ -92,6 +91,7 @@
 	let scanIntervalId = null;
 
 	let lastInterruptionHandled = 0; // Timestamp of last successful dialog removal
+	let lastUserInteractionMs = 0;   // Timestamp of last user click/interaction
 
 	// ============================================================================
 	// UTILITY FUNCTIONS
@@ -162,6 +162,16 @@
 		return array[0] / (0xFFFFFFFF + 1);
 	}
 
+	/**
+	 * Returns true if the user interacted (clicked) within the last 3 seconds.
+	 * Dialogs that appear immediately after a user action are user-initiated
+	 * (e.g. "Unsubscribe?", "Remove from playlist?", cookie consent) and must
+	 * NOT be suppressed by this extension.
+	 */
+	function wasUserInitiated() {
+		return (Date.now() - lastUserInteractionMs) < 3000;
+	}
+
 	// ============================================================================
 	// LAYER 2: DOM MONITORING
 	// ============================================================================
@@ -182,11 +192,22 @@
 	}
 
 	/**
-	 * Check if an element is the "Continue watching?" dialog
-	 * Uses multiple heuristics for resilience against YouTube changes
+	 * Check if an element is the "Continue watching?" dialog.
+	 * Uses multiple heuristics for resilience against YouTube changes.
+	 *
+	 * IMPORTANT: Text-pattern matching is the PRIMARY (and required) gate.
+	 * We never hide a dialog solely because it contains a confirm button —
+	 * that approach produces false positives on user-initiated dialogs such
+	 * as unsubscribe and delete confirmations.
 	 */
 	function isPauseDialog(element) {
 		if (!element || !element.nodeType || element.nodeType !== Node.ELEMENT_NODE) {
+			return false;
+		}
+
+		// If the user recently clicked something, this dialog was user-initiated
+		// (e.g. "Unsubscribe?", "Remove from playlist?"). Leave it alone.
+		if (wasUserInitiated()) {
 			return false;
 		}
 
@@ -212,7 +233,10 @@
 			const innerText = (element.innerText || '').toLowerCase();
 			const combinedText = textContent + ' ' + innerText;
 
-			// Check for text patterns indicating pause dialog
+			// PRIMARY GATE: Text patterns are the required signal.
+			// YouTube's pause/idle dialog always contains recognisable phrasing.
+			// If none of these patterns match, we will NOT act on the element —
+			// it is almost certainly a different, legitimate dialog.
 			const hasRelevantText = CONFIG.DIALOG_TEXT_PATTERNS.some(pattern => {
 				return combinedText.includes(pattern.toLowerCase());
 			});
@@ -222,25 +246,9 @@
 				return true;
 			}
 
-			// Check for continue button presence
-			const hasContinueButton = CONFIG.CONTINUE_BUTTON_SELECTORS.some(selector => {
-				const btn = safeQuerySelector(selector, element);
-				return btn !== null;
-			});
-
-			if (hasContinueButton) {
-				// Double-check it's not a settings dialog or other legitimate popup
-				const isSettingsDialog = combinedText.includes('quality') ||
-					combinedText.includes('playback speed') ||
-					combinedText.includes('subtitle');
-
-				if (!isSettingsDialog) {
-					log('Dialog detected via button pattern:', element);
-					return true;
-				}
-			}
-
-			// Check aria-label and aria-describedby for additional context
+			// SECONDARY CHECK: aria-label and aria-describedby attributes.
+			// These can carry pause-dialog wording even when visible text content
+			// is not directly accessible (e.g. screen-reader-only labels).
 			const ariaLabel = (element.getAttribute('aria-label') || '').toLowerCase();
 			const ariaDescribedBy = element.getAttribute('aria-describedby');
 
@@ -260,6 +268,7 @@
 				return true;
 			}
 
+			// No matching text found — treat as a legitimate dialog, do not hide.
 			return false;
 		} catch (error) {
 			log('Error checking dialog:', error);
@@ -312,17 +321,10 @@
 			element.style.setProperty('pointer-events', 'none', 'important');
 			element.style.setProperty('z-index', '-9999', 'important');
 
-			// Strategy 3: Remove from DOM (use timeout to allow button click to process)
-			setTimeout(() => {
-				try {
-					if (element.parentNode) {
-						element.parentNode.removeChild(element);
-						log('Dialog removed from DOM');
-					}
-				} catch (e) {
-					log('Could not remove from DOM:', e);
-				}
-			}, 100);
+			// Strategy 3: DOM removal intentionally omitted.
+			// Physically removing nodes from the DOM makes false positives
+			// unrecoverable — the user's dialog would be permanently destroyed.
+			// CSS hiding (Strategy 2) is sufficient and reversible.
 
 			// Strategy 4: Also hide any backdrop/overlay
 			const backdrops = document.querySelectorAll(
@@ -596,6 +598,13 @@
 	 */
 	function init() {
 		log('Initializing YouTube Uninterrupted extension');
+
+		// Track user interactions so we can distinguish user-triggered dialogs
+		// (e.g. "Unsubscribe?", "Delete comment?") from YouTube's automatic idle
+		// dialogs. Capture phase ensures we catch clicks before they reach targets.
+		document.addEventListener('click', () => {
+			lastUserInteractionMs = Date.now();
+		}, true);
 
 		// Load extension state from storage
 		browser.storage.local.get(['enabled']).then(result => {

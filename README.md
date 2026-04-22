@@ -19,7 +19,8 @@ YouTube automatically pauses videos after a period of inactivity and displays a 
 
 ## Features
 
-- ✅ **Automatic Dialog Removal** - Three-layer defense system ensures the dialog never appears
+- ✅ **Automatic Dialog Removal** - Four-layer defense system ensures the dialog never appears
+- ✅ **Preserves Legitimate Dialogs** - Unsubscribe confirmations, delete prompts, and other user-triggered dialogs are never suppressed
 - ✅ **Mobile & Desktop Support** - Works on both www.youtube.com and m.youtube.com
 - ✅ **Minimal Permissions** - Only requests access to YouTube, nothing else
 - ✅ **Zero Data Collection** - All processing happens locally, no tracking whatsoever
@@ -32,10 +33,10 @@ YouTube automatically pauses videos after a period of inactivity and displays a 
 The extension uses a multi-layered approach for maximum reliability:
 
 ### Layer 1: CSS Injection
-Instantly hides the dialog using targeted CSS rules before JavaScript even loads.
+Instantly hides the dialog using intentionally **narrow** CSS rules before JavaScript even loads. Only selectors that are exclusive to the idle dialog are used here — broad selectors that also match legitimate user-triggered dialogs (unsubscribe, delete, report) are deliberately excluded and handled by Layer 2 instead.
 
 ### Layer 2: DOM Monitoring
-A MutationObserver watches for the dialog being inserted into the page and removes it immediately.
+A MutationObserver watches for the dialog being inserted into the page and hides it immediately. **Text-pattern matching is the required gate** — the extension only acts if the dialog contains known idle/pause phrasing (e.g. "Continue watching", "Still watching"). Dialogs that appear within 3 seconds of a user click are left untouched, protecting unsubscribe confirmations and similar user-initiated flows.
 
 ### Layer 3: Activity Simulation
 Periodically simulates minimal user activity (mouse movement event) every minute to reset YouTube's idle timer, preventing the dialog from triggering in the first place.
@@ -137,7 +138,7 @@ Periodically simulates minimal user activity (mouse movement event) every minute
    
 4. Check Firefox console for errors
    - Press F12 → Console tab
-   - Look for errors starting with `[YouTube Continue]`
+   - Look for errors starting with `[YouTube Uninterrupted]`
 
 
 ### Extension Icon Not Visible (Desktop)
@@ -244,7 +245,7 @@ youtube-uninterrupted/
 
 ### Architecture
 
-The extension implements three defensive layers:
+The extension implements four defensive layers:
 
 **Layer 1: CSS Injection (`inject-styles.css`)**
 - Injected at `document_start` for instant effect
@@ -253,9 +254,10 @@ The extension implements three defensive layers:
 
 **Layer 2: DOM Monitoring (`youtube-uninterrupted.js`)**
 - MutationObserver watches for dialog insertion
-- Debounced callbacks (100ms) for performance
-- Multiple selector strategies for reliability
-- Automatically removes or hides detected dialogs
+- Debounced callbacks (50ms) for performance
+- Text-pattern matching is the mandatory primary gate
+- User-interaction guard: skips dialogs triggered within 3 s of a click
+- CSS-hides confirmed dialogs (no DOM removal, keeping false positives recoverable)
 
 **Layer 3: Activity Simulation (`youtube-uninterrupted.js`)**
 - Dispatches mouse movement events every minute

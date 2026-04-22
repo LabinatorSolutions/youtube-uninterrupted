@@ -1,42 +1,20 @@
 /**
  * YouTube Uninterrupted - CSS Injection
- * 
- * Layer 1 defense: Immediately hide the pause dialog using CSS
- * This provides instant protection before JavaScript initializes
- * 
+ *
+ * Layer 1 defense: Immediately hide the pause dialog using CSS.
+ * This provides instant protection before JavaScript initializes.
+ *
+ * IMPORTANT — keep rules here NARROW.
+ * Selectors like [role="alertdialog"], yt-confirm-dialog-renderer,
+ * ytd-simple-confirmation-dialog-renderer, and #confirm-button are intentionally
+ * NOT used here because they also match legitimate user-triggered dialogs
+ * (e.g. unsubscribe confirmations, delete confirmations, report flows).
+ * Those cases are handled exclusively by the JS layer (Layer 2), which
+ * inspects text content before deciding to act on anything.
+ *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  * Copyright (C) 2026 YouTube Uninterrupted Contributors
  */
-
-/* ==========================================================================
-   ARIA-BASED FALLBACK SELECTORS
-   These target dialogs based on accessibility attributes for resilience
-   ========================================================================== */
-
-/* Target alertdialog elements that may be used for interruptions */
-[role="alertdialog"]:not(.ytp-popup) {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-}
-
-/* ==========================================================================
-   YOUTUBE-SPECIFIC PAUSE DIALOG SELECTORS
-   ========================================================================== */
-
-/* Target dialogs with specific confirm/cancel button patterns */
-yt-confirm-dialog-renderer,
-ytd-simple-confirmation-dialog-renderer {
-  display: none !important;
-  visibility: hidden !important;
-}
-
-/* Hide elements that typically contain "Continue watching" prompts */
-.yt-confirm-dialog-renderer,
-.ytd-popup-container[dialog] {
-  display: none !important;
-  visibility: hidden !important;
-}
 
 /* ==========================================================================
    VIDEO PLAYER PROTECTION
@@ -72,9 +50,8 @@ ytd-player {
     visibility: hidden !important;
   }
 
-  /* Mobile confirmation dialogs */
-  .mobile-topbar-header-popup,
-  .dialog-container {
+  /* Mobile confirmation dialogs — only target extension-specific popups */
+  .mobile-topbar-header-popup {
     display: none !important;
     visibility: hidden !important;
   }
