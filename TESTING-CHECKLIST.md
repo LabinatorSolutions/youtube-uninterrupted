@@ -70,6 +70,29 @@ Use this checklist to verify the YouTube Uninterrupted extension is working corr
   - [ ] No interruption dialog
   - [ ] Video continues playing
 
+- [ ] **Manual Pause Is Respected** (regression: the extension must never restart a video you paused)
+  - [ ] Play a video, let it run past one "Continue watching?" interruption so the dialog has been handled once
+  - [ ] Click pause — video stays paused for at least 30 seconds
+  - [ ] Press play, then pause with the spacebar — video stays paused
+  - [ ] Press play, then pause with `k` — video stays paused
+  - [ ] Pause immediately (within ~2 seconds) after an interruption is handled — video stays paused
+  - [ ] Pause via the OS media controls or a media key — video stays paused
+
+- [ ] **Multiple Tabs** (regression: only the interrupted tab may be touched)
+  - [ ] Open 3+ YouTube video tabs, play one, pause the others
+  - [ ] Wait 15+ minutes — no paused tab starts playing on its own
+  - [ ] Toggle the extension OFF then ON — no tab starts playing
+  - [ ] Confirm the tab you left playing is still the only one playing
+
+- [ ] **Legitimate Dialogs Survive**
+  - [ ] Click Unsubscribe on any channel — the confirmation dialog appears normally, with its backdrop
+  - [ ] Do this *after* an interruption has been handled in the same tab — dialog still appears normally
+  - [ ] Open Share, Save to playlist, and the player settings menu — all render and work
+
+- [ ] **Repeated Interruptions**
+  - [ ] Leave a long video playing for several hours across multiple interruptions
+  - [ ] Every interruption is still handled — the extension does not stop working after the first few
+
 - [ ] **Enable/Disable Toggle**
   - [ ] Click extension icon
   - [ ] Toggle extension OFF
@@ -164,7 +187,7 @@ Use this checklist to verify the YouTube Uninterrupted extension is working corr
   - [ ] (Optional) Test on Firefox Nightly
 
 - [ ] **YouTube Variants**
-  - [ ] www.youtube.com (standard desktop)
+  - [ ] <https://www.youtube.com> (standard desktop)
   - [ ] m.youtube.com (mobile web)
   - [ ] youtube.com/embed/* (embedded players)
   - [ ] Should work on all variants
@@ -253,7 +276,8 @@ OS: _______________
 ## Notes
 
 Additional observations:
-```
+
+```text
 [Your notes here]
 ```
 

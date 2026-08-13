@@ -199,10 +199,13 @@
 	}
 
 	/**
-	 * Returns true if the user interacted (clicked) within the last 3 seconds.
-	 * Dialogs that appear immediately after a user action are user-initiated
-	 * (e.g. "Unsubscribe?", "Remove from playlist?", cookie consent) and must
-	 * NOT be suppressed by this extension.
+	 * Returns true if the user gave any real input — pointer or keyboard — within
+	 * USER_GESTURE_WINDOW_MS.
+	 *
+	 * Two uses. Dialogs that appear right after a user action are user-initiated
+	 * (e.g. "Unsubscribe?", "Remove from playlist?", cookie consent) and must NOT
+	 * be suppressed. A pause that follows user input is the user's own pause and
+	 * must NOT be undone.
 	 */
 	function wasUserInitiated() {
 		return (Date.now() - lastUserInteractionMs) < CONFIG.USER_GESTURE_WINDOW_MS;
@@ -271,7 +274,7 @@
 			return false;
 		}
 
-		// If the user recently clicked something, this dialog was user-initiated
+		// If the user gave any input just now, this dialog was user-initiated
 		// (e.g. "Unsubscribe?", "Remove from playlist?"). Leave it alone.
 		if (wasUserInitiated()) {
 			return false;
@@ -462,7 +465,7 @@
 	 * Scan entire DOM for pause dialogs
 	 */
 	function scanAndRemoveDialogs() {
-		if (!CONFIG.enabled) return;
+		if (!CONFIG.enabled) return false;
 
 		try {
 			let dialogsFound = 0;
@@ -639,8 +642,16 @@
 
 		if (!dialogFoundNow && !wasRecentlyHandled) return false;
 
+		// The attempt cap bounds a single interruption episode, not the session.
+		// If our last resume was long enough ago that this is plainly a new
+		// interruption, start counting again — otherwise three interruptions in a
+		// day would permanently disarm the extension.
+		if ((Date.now() - selfInitiatedPlayMs) > CONFIG.INTERRUPTION_GRACE_MS) {
+			resumeAttempts = 0;
+		}
+
 		if (resumeAttempts >= CONFIG.MAX_RESUME_ATTEMPTS) {
-			log('Resume attempt limit reached, standing down');
+			log('Resume attempt limit reached for this interruption, standing down');
 			return false;
 		}
 
@@ -659,15 +670,21 @@
 	function onVideoPause() {
 		if (!CONFIG.enabled) return;
 
-		// Interruption evidence wins: YouTube's own dialog is unambiguous.
-		if (attemptResume('pause event')) return;
-
-		// Otherwise, if a real input landed just before the pause, the human did
-		// it. Latch that until the video plays again — polling must not undo it.
+		// User intent is checked FIRST and wins outright. It has to be first: the
+		// interruption grace window below stays open for a few seconds after we
+		// handle a dialog, and a deliberate pause inside that window would
+		// otherwise be read as part of the same interruption and undone.
+		//
+		// This costs nothing in the case we care about. YouTube's idle dialog only
+		// appears after a long stretch of inactivity, so a genuine interruption
+		// never has recent user input in front of it.
 		if (wasUserInitiated()) {
 			userPaused = true;
 			log('User paused the video; auto-resume disabled until playback resumes');
+			return;
 		}
+
+		if (attemptResume('pause event')) return;
 
 		// Neither case: unknown cause (media key, another extension, the OS media
 		// controls). Do nothing now. If YouTube's dialog shows up in the next few
@@ -676,13 +693,6 @@
 
 	function onVideoPlay() {
 		userPaused = false;
-
-		// Only a play we did not cause clears the attempt counter. Otherwise a
-		// page that re-pauses immediately after every resume would reset the
-		// counter each round and the two of us would fight indefinitely.
-		if ((Date.now() - selfInitiatedPlayMs) > 1000) {
-			resumeAttempts = 0;
-		}
 	}
 
 	/**

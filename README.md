@@ -1,13 +1,15 @@
 # YouTube Uninterrupted
 
-A Firefox extension that prevents YouTube from interrupting your viewing experience with the "Continue watching?" dialog. Perfect for music playlists, podcasts, long-form content, and ambient videos.
+A Firefox extension that prevents YouTube from interrupting your viewing experience with the "Continue watching?"
+dialog. Perfect for music playlists, podcasts, long-form content, and ambient videos.
 
 [![Firefox Add-on](https://img.shields.io/badge/Firefox_Add--on-Get_It_Now-blue.svg)](https://addons.mozilla.org/en-US/firefox/addon/youtube-uninterrupted/)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
 ## Purpose
 
-YouTube automatically pauses videos after a period of inactivity and displays a "Video paused. Continue watching?" prompt. This extension removes that interruption, allowing uninterrupted playback for legitimate use cases such as:
+YouTube automatically pauses videos after a period of inactivity and displays a "Video paused. Continue watching?"
+prompt. This extension removes that interruption, allowing uninterrupted playback for legitimate use cases such as:
 
 - 🎵 Music playlists and albums
 - 🎙️ Podcasts and long-form content
@@ -15,13 +17,15 @@ YouTube automatically pauses videos after a period of inactivity and displays a 
 - 📚 Educational content and lectures
 - 🎮 Livestreams and VODs
 
-**Note:** This extension does NOT block advertisements or interfere with YouTube's monetization. It only prevents the passive viewing timeout prompt.
+**Note:** This extension does NOT block advertisements or interfere with YouTube's monetization. It only prevents the
+passive viewing timeout prompt.
 
 ## Features
 
 - ✅ **Automatic Dialog Removal** - Four-layer defense system ensures the dialog never appears
-- ✅ **Preserves Legitimate Dialogs** - Unsubscribe confirmations, delete prompts, and other user-triggered dialogs are never suppressed
-- ✅ **Mobile & Desktop Support** - Works on both www.youtube.com and m.youtube.com
+- ✅ **Preserves Legitimate Dialogs** - Unsubscribe confirmations, delete prompts, and other user-triggered dialogs are
+  never suppressed
+- ✅ **Mobile & Desktop Support** - Works on both <https://www.youtube.com> and m.youtube.com
 - ✅ **Minimal Permissions** - Only requests access to YouTube, nothing else
 - ✅ **Zero Data Collection** - All processing happens locally, no tracking whatsoever
 - ✅ **Lightweight** - Minimal CPU/memory footprint, won't slow down your browser
@@ -34,15 +38,36 @@ The extension uses a multi-layered approach for maximum reliability:
 
 ### Layer 1: CSS Injection
 
-Instantly hides the dialog using intentionally **narrow** CSS rules before JavaScript even loads. Only selectors that are exclusive to the idle dialog are used here — broad selectors that also match legitimate user-triggered dialogs (unsubscribe, delete, report) are deliberately excluded and handled by Layer 2 instead.
+Applied before JavaScript even loads, and kept intentionally **narrow**. On desktop it only guarantees the player and
+its controls stay interactive; it hides no dialogs at all. Broad selectors would also match legitimate user-triggered
+dialogs (unsubscribe, delete, report), and CSS cannot read text to tell them apart — so that decision is left entirely
+to Layer 2. Mobile-only popup containers are the one exception.
 
 ### Layer 2: DOM Monitoring
 
-A MutationObserver watches for the dialog being inserted into the page and hides it immediately. **Text-pattern matching is the required gate** — the extension only acts if the dialog contains known idle/pause phrasing (e.g. "Continue watching", "Still watching"). Dialogs that appear within 3 seconds of a user click are left untouched, protecting unsubscribe confirmations and similar user-initiated flows.
+A MutationObserver watches for the dialog being inserted into the page and hides it immediately. **Text-pattern matching
+is the required gate** — the extension only acts if the dialog contains known idle/pause phrasing (e.g. "Continue
+watching", "Still watching"). Dialogs that appear within 3 seconds of a user click are left untouched, protecting
+unsubscribe confirmations and similar user-initiated flows.
 
 ### Layer 3: Activity Simulation
 
-Periodically simulates minimal user activity (mouse movement event) every minute to reset YouTube's idle timer, preventing the dialog from triggering in the first place.
+Periodically simulates minimal user activity (mouse movement event) every minute to reset YouTube's idle timer,
+preventing the dialog from triggering in the first place.
+
+### Layer 4: Playback Recovery
+
+If YouTube manages to pause the video before the dialog is removed, this layer resumes it — and nothing else. Two
+guarantees hold in every tab:
+
+- **A pause you performed is never undone.** Any real click, tap, or key press (including space and `k`) immediately
+  before a pause marks the video as user-paused, and auto-resume stays off until you press play again.
+- **Resuming requires live evidence.** A pause dialog must be *visible on screen* at that moment, or have been removed
+  moments earlier. A dismissed dialog still sitting in the page counts for nothing, so a tab that was interrupted once
+  hours ago is not treated as interrupted forever.
+
+If neither holds — a media key, another extension, your OS media controls — the extension does nothing and leaves the
+video where you left it.
 
 ## Installation
 
@@ -73,10 +98,10 @@ Periodically simulates minimal user activity (mouse movement event) every minute
 #### Method 1: Custom Add-on Collection (Recommended)
 
 1. **Create a Firefox Account** (if you don't have one)
-   - Go to https://accounts.firefox.com/signup
+   - Go to <https://accounts.firefox.com/signup>
 
 2. **Create a Collection**
-   - Visit https://addons.mozilla.org/firefox/collections/
+   - Visit <https://addons.mozilla.org/firefox/collections/>
    - Click "Create a collection"
    - Name it (e.g., "My Extensions")
    - Note your User ID and Collection name
@@ -331,11 +356,11 @@ the Free Software Foundation, either version 3 of the License, or
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU Affero General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
+along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ## Credits
 
@@ -343,11 +368,12 @@ Developed by [Labinator](https://Labinator.com).
 
 ## Support
 
-- **Issues:** https://github.com/LabinatorSolutions/youtube-uninterrupted/issues
+- **Issues:** <https://github.com/LabinatorSolutions/youtube-uninterrupted/issues>
 
 ## Ethical Use & Responsibility
 
-This extension is designed strictly to enhance the experience for valid users who are actively listening to or watching content but cannot interact with their device (e.g., while cooking, exercising, working, or sleeping).
+This extension is designed strictly to enhance the experience for valid users who are actively listening to or watching
+content but cannot interact with their device (e.g., while cooking, exercising, working, or sleeping).
 
 **Please use this tool responsibly.** It is **NOT** intended to:
 
@@ -355,11 +381,13 @@ This extension is designed strictly to enhance the experience for valid users wh
 - Abuse YouTube's bandwidth or server resources
 - Circumvent policies when no user is actually present or consuming content
 
-We strongly encourage users to respect the platform and its creators. If you are no longer consuming content, please pause the video or close the tab manually.
+We strongly encourage users to respect the platform and its creators. If you are no longer consuming content, please
+pause the video or close the tab manually.
 
 ## Disclaimer
 
-This extension is not affiliated with, endorsed by, or officially connected to YouTube, Google, or Mozilla. It is an independent project created for educational purposes and personal use.
+This extension is not affiliated with, endorsed by, or officially connected to YouTube, Google, or Mozilla. It is an
+independent project created for educational purposes and personal use.
 
 The extension respects YouTube's terms of service by:
 

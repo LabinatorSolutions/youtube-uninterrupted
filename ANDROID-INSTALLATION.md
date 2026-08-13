@@ -10,7 +10,8 @@ Complete step-by-step instructions for installing YouTube Uninterrupted on Firef
 
 ## Why Is This Complicated on Mobile?
 
-Unlike desktop, Firefox for Android doesn't have an "about:debugging" page to load temporary add-ons. To install custom extensions, you must:
+Unlike desktop, Firefox for Android doesn't have an "about:debugging" page to load temporary add-ons. To install custom
+extensions, you must:
 
 1. Create a Firefox Add-on Collection
 2. Configure Firefox Android to use your collection
@@ -23,7 +24,8 @@ This is a **one-time setup** - after configuration, you can easily add/remove ex
 ### Part 1: Create Firefox Account (Skip if you have one)
 
 1. **On your computer or phone**, go to:
-   ```
+
+   ```text
    https://accounts.firefox.com/signup
    ```
 
@@ -36,7 +38,7 @@ This is a **one-time setup** - after configuration, you can easily add/remove ex
 ### Part 2: Create Add-on Collection
 
 1. **Sign in to Firefox Add-ons**
-   - Go to: https://addons.mozilla.org
+   - Go to: <https://addons.mozilla.org>
    - Click "Log in" (top right)
    - Sign in with your Firefox account
 
@@ -44,9 +46,11 @@ This is a **one-time setup** - after configuration, you can easily add/remove ex
    - Click your profile icon (top right)
    - Click "View My Profile"
    - Look at the URL - it will be:
-     ```
+
+     ```text
      https://addons.mozilla.org/en-US/firefox/user/NUMBERS/
      ```
+
    - **Copy those NUMBERS** - this is your User ID
    - Example: If URL is `.../user/12345678/`, your User ID is `12345678`
 
@@ -74,7 +78,7 @@ Since this extension isn't on Mozilla Add-ons yet, you have two options:
    - Make sure `manifest.json` is in the root of the ZIP
 
 2. **Submit to AMO**
-   - Go to: https://addons.mozilla.org/developers/addon/submit/distribution
+   - Go to: <https://addons.mozilla.org/developers/addon/submit/distribution>
    - Choose "On this site" (unlisted if for personal use only)
    - Upload your ZIP file
    - Fill in required information
@@ -90,7 +94,7 @@ Since this extension isn't on Mozilla Add-ons yet, you have two options:
 
 For testing, you can use any public extension to verify your setup works:
 
-1. Go to: https://addons.mozilla.org
+1. Go to: <https://addons.mozilla.org>
 2. Search for any extension (e.g., "uBlock Origin")
 3. Click the extension
 4. Click "Add to collection"
@@ -167,6 +171,7 @@ Once you verify the setup works, submit your YouTube Uninterrupted extension as 
 **Problem:** After tapping Firefox logo 5 times, option doesn't appear
 
 **Solutions:**
+
 - Make sure you're using **Firefox** (not Firefox Focus, Nightly, or Beta)
 - Update Firefox to the latest version from Play Store
 - Try tapping 5 times faster
@@ -177,6 +182,7 @@ Once you verify the setup works, submit your YouTube Uninterrupted extension as 
 **Problem:** After configuring collection, it's empty
 
 **Solutions:**
+
 - Verify User ID is correct (just the numbers)
 - Verify Collection name matches exactly (case-sensitive)
 - Make sure collection is set to "Public" on AMO
@@ -188,6 +194,7 @@ Once you verify the setup works, submit your YouTube Uninterrupted extension as 
 **Problem:** Dialog still appears
 
 **Solutions:**
+
 - Verify extension is enabled (Add-ons → YouTube Uninterrupted → ON)
 - Reload the YouTube page
 - Clear Firefox cache: Settings → Delete browsing data
@@ -198,6 +205,7 @@ Once you verify the setup works, submit your YouTube Uninterrupted extension as 
 **Problem:** Submission rejected or stuck in review
 
 **Solutions:**
+
 - Make sure manifest.json is valid
 - Ensure all icons are included
 - Set visibility to "Unlisted" for personal use
@@ -210,7 +218,7 @@ If you're comfortable with beta software:
 
 1. **Install Firefox Nightly** from Play Store
 2. Nightly allows **any** extension without collections
-3. Go to: https://addons.mozilla.org
+3. Go to: <https://addons.mozilla.org>
 4. Search for extensions and install directly
 
 Note: Nightly is less stable than regular Firefox.
@@ -218,7 +226,8 @@ Note: Nightly is less stable than regular Firefox.
 ## Frequently Asked Questions
 
 **Q: Do I need to redo this for every extension?**
-A: No! Once your collection is configured, just add new extensions to your collection on AMO, and they'll appear in Firefox Android automatically.
+A: No! Once your collection is configured, just add new extensions to your collection on AMO, and they'll appear in
+Firefox Android automatically.
 
 **Q: Can I share my collection with friends?**
 A: Yes! Give them your User ID and Collection name, and they can configure their Firefox to use it.
@@ -238,6 +247,7 @@ A: No. No root required.
 ## Visual Setup Guide
 
 If you prefer video instructions, search YouTube for:
+
 - "Firefox Android custom add-on collection"
 - "Install custom Firefox extensions Android"
 
@@ -245,7 +255,7 @@ If you prefer video instructions, search YouTube for:
 
 If you're stuck:
 
-1. **Firefox Support:** https://support.mozilla.org/
+1. **Firefox Support:** <https://support.mozilla.org/>
 2. **GitHub Issues:** [Link to your repo]/issues
 3. **Reddit:** r/firefox community is very helpful
 
@@ -253,7 +263,7 @@ If you're stuck:
 
 Once set up, to install new extensions:
 
-```
+```text
 1. Add extension to your AMO collection
 2. Open Firefox Android → Add-ons
 3. Find extension → Install

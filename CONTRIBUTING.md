@@ -19,6 +19,7 @@ Guide for developers who want to modify, improve, or contribute to YouTube Unint
 ### Setting Up Development Environment
 
 1. **Clone Repository**
+
    ```bash
    git clone https://github.com/LabinatorSolutions/youtube-uninterrupted.git
    cd youtube-uninterrupted
@@ -41,7 +42,7 @@ Guide for developers who want to modify, improve, or contribute to YouTube Unint
 
 ## 📁 Project Structure
 
-```
+```text
 youtube-uninterrupted/
 ├── manifest.json                 # Extension metadata & config
 │   ├── Defines permissions
@@ -89,6 +90,7 @@ youtube-uninterrupted/
 - `simulateActivity()` - Dispatches mouse events to reset timer
 
 **Configuration Object:**
+
 ```javascript
 const CONFIG = {
   enabled: true,                          // Extension on/off
@@ -111,6 +113,7 @@ const CONFIG = {
 - Tab communication
 
 **Message Format:**
+
 ```javascript
 // From popup to background
 { action: 'setState', enabled: true }
@@ -127,6 +130,7 @@ const CONFIG = {
 **Purpose:** User interface for toggling extension on/off
 
 **Key Elements:**
+
 - Toggle switch (ON/OFF)
 - Status indicator (Active/Disabled)
 - Info text
@@ -137,6 +141,7 @@ const CONFIG = {
 ### Three-Layer Defense System
 
 **Layer 1: CSS Injection** (Instant)
+
 ```css
 /* inject-styles.css */
 ytd-popup-container,
@@ -145,29 +150,34 @@ tp-yt-paper-dialog {
   visibility: hidden !important;
 }
 ```
+
 - Injected at `document_start` (before page renders)
 - Hides dialog immediately using CSS
 - Uses `!important` to override inline styles
 
 **Layer 2: DOM Monitoring** (Reactive)
+
 ```javascript
 const observer = new MutationObserver((mutations) => {
   // Check for added nodes
   // If dialog detected → remove it
 });
 ```
+
 - Watches for DOM changes
 - Detects dialog insertion
 - Removes dialog elements
 - Debounced for performance
 
 **Layer 3: Activity Simulation** (Proactive)
+
 ```javascript
 setInterval(() => {
   const event = new MouseEvent('mousemove', {...});
   document.dispatchEvent(event);
 }, 60 * 1000); // Every minute
 ```
+
 - Prevents dialog from triggering
 - Simulates user activity
 - Resets YouTube's idle timer
@@ -175,7 +185,7 @@ setInterval(() => {
 
 ### Communication Flow
 
-```
+```text
 User clicks popup toggle
         ↓
 popup.js sends message to background
@@ -222,24 +232,28 @@ CONFIG.DEBUG = true;
 This project uses `bun` scripts to simplify development tasks.
 
 1. **Install Dependencies**
+
    ```bash
    bun install
    ```
 
 2. **Lint Code**
    Check for common errors and manifest issues:
+
    ```bash
    bun run lint
    ```
 
 3. **Typecheck Code**
    Check for type errors in JavaScript files:
+
    ```bash
    bun run typecheck
    ```
 
 4. **Build Package**
    Create a production-ready ZIP file in the `web-ext-artifacts/` directory:
+
    ```bash
    bun run build
    ```
@@ -259,6 +273,7 @@ If YouTube changes their dialog structure:
    - Note class names, IDs, attributes
 
 2. **Update Selectors**
+
    ```javascript
    // In youtube-uninterrupted.js
    DIALOG_SELECTORS: [
@@ -269,6 +284,7 @@ If YouTube changes their dialog structure:
    ```
 
 3. **Update CSS**
+
    ```css
    /* In inject-styles.css */
    ytd-popup-container,
@@ -290,15 +306,17 @@ ACTIVITY_INTERVAL_MS: 3 * 60 * 1000,  // 3 minutes (current default is 1 minute)
 
 ### Adding Features
 
-**Example: Add Statistics Tracking**
+#### Example: Add Statistics Tracking
 
 1. **Update Storage**
+
    ```javascript
    // In service-worker.js
    let stats = { dialogsBlocked: 0 };
    ```
 
 2. **Track in Content Script**
+
    ```javascript
    // In youtube-uninterrupted.js
    function removePauseDialog(element) {
@@ -310,6 +328,7 @@ ACTIVITY_INTERVAL_MS: 3 * 60 * 1000,  // 3 minutes (current default is 1 minute)
    ```
 
 3. **Update Background**
+
    ```javascript
    // In service-worker.js
    if (message.action === 'dialogBlocked') {
@@ -319,6 +338,7 @@ ACTIVITY_INTERVAL_MS: 3 * 60 * 1000,  // 3 minutes (current default is 1 minute)
    ```
 
 4. **Display in Popup**
+
    ```javascript
    // In popup.js
    const stats = await browser.storage.local.get(['stats']);
@@ -331,18 +351,21 @@ ACTIVITY_INTERVAL_MS: 3 * 60 * 1000,  // 3 minutes (current default is 1 minute)
 ### 1. Prepare for Release
 
 **Update Version:**
+
 ```json
 // manifest.json
 "version": "1.5.0"  // Increment version
 ```
 
 **Disable Debug Mode:**
+
 ```javascript
 // youtube-uninterrupted.js
 CONFIG.DEBUG = false
 ```
 
 **Test Thoroughly:**
+
 - Run full testing checklist
 - Test on multiple Firefox versions
 - Test on desktop and mobile
@@ -360,7 +383,7 @@ zip -r youtube-uninterrupted-v1.5.0.zip . \
 
 ### 3. Submit to Mozilla Add-ons (AMO)
 
-1. Go to: https://addons.mozilla.org/developers/
+1. Go to: <https://addons.mozilla.org/developers/>
 2. Upload ZIP file
 3. Fill in metadata:
    - Name: YouTube Uninterrupted
@@ -380,6 +403,7 @@ zip -r youtube-uninterrupted-v1.5.0.zip . \
 **Symptom:** Error when loading temporary add-on
 
 **Solutions:**
+
 - Check manifest.json is valid JSON
 - Verify all paths in manifest exist
 - Check browser console for errors
@@ -389,6 +413,7 @@ zip -r youtube-uninterrupted-v1.5.0.zip . \
 **Symptom:** Dialog shows even with extension enabled
 
 **Debug Steps:**
+
 1. Open console (F12)
 2. Enable debug mode (`CONFIG.DEBUG = true`)
 3. Look for: `[YouTube Uninterrupted] ...` messages
@@ -396,6 +421,7 @@ zip -r youtube-uninterrupted-v1.5.0.zip . \
 5. Verify selectors match current YouTube DOM
 
 **Common Causes:**
+
 - YouTube changed their DOM structure
 - Selectors need updating
 - Extension disabled on current tab
@@ -405,11 +431,13 @@ zip -r youtube-uninterrupted-v1.5.0.zip . \
 **Symptom:** Browser slows down over time
 
 **Debug Steps:**
+
 1. Open `about:memory`
 2. Check extension memory usage
 3. If > 50MB, there's a leak
 
 **Solutions:**
+
 - Ensure MutationObserver is disconnected on `beforeunload`
 - Clear intervals on page unload
 - Check for retained DOM references
@@ -419,6 +447,7 @@ zip -r youtube-uninterrupted-v1.5.0.zip . \
 ### When Contributing
 
 **DO:**
+
 - ✅ Minimize permissions requested
 - ✅ Sanitize user input
 - ✅ Use `textContent` instead of `innerHTML`
@@ -426,6 +455,7 @@ zip -r youtube-uninterrupted-v1.5.0.zip . \
 - ✅ Use strict Content Security Policy
 
 **DON'T:**
+
 - ❌ Request unnecessary permissions
 - ❌ Make external network requests
 - ❌ Store sensitive user data
@@ -435,6 +465,7 @@ zip -r youtube-uninterrupted-v1.5.0.zip . \
 ### Code Review Checklist
 
 Before submitting PR:
+
 - [ ] No new permissions added (unless absolutely necessary)
 - [ ] No external network requests
 - [ ] No user data collection
@@ -495,21 +526,25 @@ try {
 
 1. **Fork Repository**
 2. **Create Feature Branch**
+
    ```bash
    git checkout -b feature/my-new-feature
    ```
+
 3. **Make Changes**
 4. **Test Thoroughly**
 5. **Commit with Clear Messages**
+
    ```bash
    git commit -m "feat: Add statistics tracking"
    ```
+
 6. **Push to Fork**
 7. **Open Pull Request**
 
 ### Commit Message Format
 
-```
+```text
 type(scope): Subject
 
 Body (optional)
@@ -518,6 +553,7 @@ Footer (optional)
 ```
 
 **Types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation
@@ -527,7 +563,8 @@ Footer (optional)
 - `chore`: Maintenance
 
 **Examples:**
-```
+
+```text
 feat(popup): Add statistics display
 fix(content): Update dialog selectors for new YouTube UI
 docs(readme): Add troubleshooting section
@@ -577,9 +614,10 @@ New to extension development? Start here:
 Contributors are recognized in GitHub contributors list.
 
 Special thanks to:
+
 - Mozilla Firefox team for WebExtensions API
 - Open-source community for inspiration
 
 ---
 
-**Happy Coding! 🚀**
+Happy coding! 🚀
