@@ -7,9 +7,13 @@
 	"scripts": {
 		"lint": "eslint . --report-unused-disable-directives --max-warnings 0",
 		"lint:fix": "eslint . --fix",
+		"lint:md": "rumdl check .",
+		"lint:md:fix": "rumdl fmt .",
 		"typecheck": "tsc --noEmit",
+		"test:e2e": "bun tests/pause-behavior.mjs",
 		"build": "web-ext build --overwrite-dest",
-		"test": "bun run lint && bun run typecheck"
+		"preview": "web-ext run",
+		"test": "bun run lint && bun run lint:md && bun run typecheck && bun run test:e2e"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
@@ -17,6 +21,8 @@
 		"bun-types": "latest",
 		"eslint": "^10.8.1",
 		"globals": "^17.11.0",
+		"playwright": "^1.62.1",
+		"rumdl": "^0.2.55",
 		"typescript": "^7.0.2",
 		"web-ext": "^10.6.0"
 	},

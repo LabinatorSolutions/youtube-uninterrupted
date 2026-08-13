@@ -251,8 +251,36 @@ This project uses `bun` scripts to simplify development tasks.
    bun run typecheck
    ```
 
-4. **Build Package**
-   Create a production-ready ZIP file in the `web-ext-artifacts/` directory:
+4. **Lint Markdown**
+   Check documentation against the `rumdl` rules in `.rumdl.toml` (`bun run lint:md:fix` auto-fixes most):
+
+   ```bash
+   bun run lint:md
+   ```
+
+5. **Pause/Resume Regression Tests**
+   Drives the real content script in a headless browser against a fixture that reproduces YouTube's DOM behaviour:
+
+   ```bash
+   bun run test:e2e
+   ```
+
+   Needs a Chromium. It uses Playwright's own build if present, otherwise falls back to a system Chromium; override with
+   `CHROMIUM_PATH=/path/to/chromium`. To install Playwright's: `bunx playwright install chromium`.
+
+   **Any change to Layer 2 or Layer 4 must keep these green.** Two shipped bugs came from this area — the extension
+   restarting a video the user had paused, and the extension giving up after a few interruptions — and neither was
+   visible to lint, typecheck or `web-ext lint`. Add a scenario when you change the detection or resume rules.
+
+6. **Everything At Once**
+
+   ```bash
+   bun run test
+   ```
+
+7. **Build Package**
+   Create a production-ready ZIP file in the `web-ext-artifacts/` directory. Development files are excluded via
+   `web-ext-config.mjs` — if you add one, add it there too:
 
    ```bash
    bun run build

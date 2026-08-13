@@ -28,8 +28,17 @@ jobs:
       - name: Lint Extension
         run: bun run lint
 
+      - name: Lint Markdown
+        run: bun run lint:md
+
       - name: Typecheck Extension
         run: bun run typecheck
+
+      - name: Install Chromium for tests
+        run: bunx playwright install --with-deps chromium
+
+      - name: Pause/Resume Regression Tests
+        run: bun run test:e2e
 
       - name: Build Extension
         run: bun run build

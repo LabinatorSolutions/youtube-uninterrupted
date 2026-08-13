@@ -21,4 +21,15 @@ export default [
 			"no-undef": "warn",
 		},
 	},
+	{
+		// Test harness runs under Bun, not in the browser. It still needs the
+		// browser globals from the block above for the code it evaluates inside
+		// the page, so this only adds the runtime ones.
+		files: ["tests/**/*.mjs"],
+		languageOptions: {
+			globals: {
+				...globals.node,
+			},
+		},
+	},
 ];

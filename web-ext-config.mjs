@@ -20,6 +20,10 @@ export default {
 		'tsconfig.json',
 		'eslint.config.js',
 		'web-ext-config.mjs',
+		// Both entries are needed: the glob drops the contents, the bare name
+		// drops the now-empty directory entry itself.
+		'tests',
+		'tests/**',
 
 		// Repository documentation (the AMO listing carries the user-facing text)
 		'ANDROID-INSTALLATION.md',
