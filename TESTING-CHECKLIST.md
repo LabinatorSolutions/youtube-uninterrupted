@@ -159,7 +159,7 @@ Use this checklist to verify the YouTube Uninterrupted extension is working corr
 ## Compatibility Tests
 
 - [ ] **Firefox Versions**
-  - [ ] Test on Firefox 147+ (minimum version)
+  - [ ] Test on Firefox 153+ (minimum version)
   - [ ] Test on latest Firefox release
   - [ ] (Optional) Test on Firefox Nightly
 

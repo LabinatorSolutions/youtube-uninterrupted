@@ -26,11 +26,19 @@
 		// Extension state (will be updated from storage)
 		enabled: true,
 
-		// Primary selectors for the pause dialog (multiple for resilience)
+		// Primary selectors for the pause dialog (multiple for resilience).
+		//
+		// NOTE: 'ytd-popup-container' and '.ytd-popup-container' are deliberately
+		// NOT listed. 'ytd-popup-container' is a single persistent host element
+		// that YouTube keeps for the lifetime of the page and parks every popup
+		// inside — including dialogs the user already dismissed. Matching it means
+		// (a) its textContent keeps reporting "Continue watching?" forever after a
+		// single interruption, and (b) hiding it hides every YouTube popup at once.
+		// '.ytd-popup-container' is worse: Polymer stamps that class onto every
+		// descendant of the container, so it matches plain text nodes' wrappers.
+		// Only match the dialog elements themselves.
 		DIALOG_SELECTORS: [
-			'ytd-popup-container',
 			'tp-yt-paper-dialog',
-			'.ytd-popup-container',
 			'[role="dialog"]',
 			'[role="alertdialog"]',
 			'yt-confirm-dialog-renderer',
@@ -80,6 +88,23 @@
 		VIDEO_CHECK_INTERVAL_MS: 2000, // Check video state every 2 seconds
 		SCAN_INTERVAL_MS: 5000, // Periodic full scan every 5 seconds
 
+		// A pause that follows a real user input within this window is the user's
+		// own pause and must never be undone.
+		USER_GESTURE_WINDOW_MS: 3000,
+
+		// How long after removing a pause dialog we still consider a pause to have
+		// been caused by that dialog.
+		INTERRUPTION_GRACE_MS: 3000,
+
+		// Inline hiding is reverted after this long. YouTube reuses the same dialog
+		// and backdrop nodes for every future popup, so a permanent inline
+		// display:none would silently break unrelated dialogs later in the session.
+		HIDE_REVERT_MS: 5000,
+
+		// Upper bound on consecutive auto-resume attempts. Reset whenever the video
+		// actually plays, so a working resume never exhausts it.
+		MAX_RESUME_ATTEMPTS: 3,
+
 		// Debug mode (logs to console)
 		DEBUG: false
 	};
@@ -91,7 +116,18 @@
 	let scanIntervalId = null;
 
 	let lastInterruptionHandled = 0; // Timestamp of last successful dialog removal
-	let lastUserInteractionMs = 0;   // Timestamp of last user click/interaction
+	let lastUserInteractionMs = 0;   // Timestamp of last trusted user input
+
+	// Set when the user pauses the video themselves. Stays set until the video
+	// plays again, so the extension can never re-start a video the user stopped.
+	let userPaused = false;
+
+	let observedVideo = null;        // Video element we have listeners attached to
+	let resumeAttempts = 0;          // Consecutive auto-resume attempts
+	let selfInitiatedPlayMs = 0;     // When we last called play() ourselves
+
+	// Original inline style values for elements we hid, so hiding is reversible.
+	const hiddenElements = new WeakMap();
 
 	// ============================================================================
 	// UTILITY FUNCTIONS
@@ -169,7 +205,37 @@
 	 * NOT be suppressed by this extension.
 	 */
 	function wasUserInitiated() {
-		return (Date.now() - lastUserInteractionMs) < 3000;
+		return (Date.now() - lastUserInteractionMs) < CONFIG.USER_GESTURE_WINDOW_MS;
+	}
+
+	/**
+	 * Returns true only if the element is actually rendered on screen.
+	 *
+	 * This is the gate that keeps dismissed dialogs from counting. YouTube does
+	 * not delete a dialog when it closes — it hides it and leaves the node in the
+	 * document, text and all. Without this check a single "Continue watching?"
+	 * dialog from an hour ago keeps matching for the rest of the page's life.
+	 */
+	function isElementVisible(element) {
+		try {
+			if (typeof element.checkVisibility === 'function') {
+				return element.checkVisibility({
+					checkOpacity: true,
+					checkVisibilityCSS: true
+				});
+			}
+
+			// Fallback for older engines.
+			const rect = element.getBoundingClientRect();
+			if (rect.width === 0 && rect.height === 0) return false;
+
+			const style = window.getComputedStyle(element);
+			return style.display !== 'none' &&
+				style.visibility !== 'hidden' &&
+				style.opacity !== '0';
+		} catch (_e) {
+			return false;
+		}
 	}
 
 	// ============================================================================
@@ -228,6 +294,11 @@
 
 			if (!isDialogElement) return false;
 
+			// A dialog that is not on screen is not interrupting anything. This
+			// covers both dialogs YouTube has already dismissed and ones we hid
+			// ourselves a moment ago.
+			if (!isElementVisible(element)) return false;
+
 			// Get all text content for pattern matching
 			const textContent = (element.textContent || '').toLowerCase();
 			const innerText = (element.innerText || '').toLowerCase();
@@ -276,6 +347,51 @@
 		}
 	}
 
+	// Whole-label match for a confirm button. Anchored on purpose.
+	const CONFIRM_LABEL_PATTERN = /^(continue|continue watching|keep watching|yes|ok|okay|resume|got it)\.?$/;
+
+	/**
+	 * Hide an element with inline styles, then put its original inline styles
+	 * back after HIDE_REVERT_MS.
+	 *
+	 * The revert is what makes this safe. YouTube reuses the same dialog and
+	 * backdrop nodes for every popup it shows, so a permanent inline
+	 * `display: none !important` from one interruption would silently break the
+	 * next unrelated dialog — an unsubscribe confirmation would render invisible,
+	 * or a legitimate dialog would appear with no backdrop. If the pause dialog is
+	 * somehow still up after the revert, the next scan simply hides it again.
+	 */
+	function hideTemporarily(element) {
+		const PROPS = ['display', 'visibility', 'opacity', 'pointer-events', 'z-index'];
+		const VALUES = ['none', 'hidden', '0', 'none', '-9999'];
+
+		if (!hiddenElements.has(element)) {
+			hiddenElements.set(element, PROPS.map(prop => ({
+				prop,
+				value: element.style.getPropertyValue(prop),
+				priority: element.style.getPropertyPriority(prop)
+			})));
+		}
+
+		PROPS.forEach((prop, i) => {
+			element.style.setProperty(prop, VALUES[i], 'important');
+		});
+
+		setTimeout(() => {
+			const saved = hiddenElements.get(element);
+			if (!saved) return;
+			hiddenElements.delete(element);
+
+			saved.forEach(({ prop, value, priority }) => {
+				element.style.removeProperty(prop);
+				if (value) element.style.setProperty(prop, value, priority);
+			});
+
+			// Re-check: if YouTube left the dialog open, hide it again.
+			if (CONFIG.enabled) scanAndRemoveDialogs();
+		}, CONFIG.HIDE_REVERT_MS);
+	}
+
 	/**
 	 * Remove or hide the pause dialog using multiple strategies
 	 */
@@ -300,12 +416,14 @@
 				}
 			}
 
-			// Also check for any button with confirm-like text
+			// Also check for any button with confirm-like text.
+			// Matched as a whole label, not a substring: 'ok' as a substring also
+			// matches "Bookmark", "Look", "Block" and similar.
 			if (!clicked) {
 				const buttons = element.querySelectorAll('button, yt-button-renderer');
 				for (const btn of buttons) {
-					const btnText = (btn.textContent || '').toLowerCase();
-					if (btnText.includes('continue') || btnText.includes('yes') || btnText.includes('ok')) {
+					const btnText = (btn.textContent || '').trim().toLowerCase();
+					if (CONFIRM_LABEL_PATTERN.test(btnText)) {
 						log('Clicking button with text:', btnText);
 						btn.click();
 						clicked = true;
@@ -314,25 +432,24 @@
 				}
 			}
 
-			// Strategy 2: Hide with CSS
-			element.style.setProperty('display', 'none', 'important');
-			element.style.setProperty('visibility', 'hidden', 'important');
-			element.style.setProperty('opacity', '0', 'important');
-			element.style.setProperty('pointer-events', 'none', 'important');
-			element.style.setProperty('z-index', '-9999', 'important');
+			// Strategy 2: Hide with CSS, temporarily.
+			hideTemporarily(element);
 
 			// Strategy 3: DOM removal intentionally omitted.
 			// Physically removing nodes from the DOM makes false positives
 			// unrecoverable — the user's dialog would be permanently destroyed.
 			// CSS hiding (Strategy 2) is sufficient and reversible.
 
-			// Strategy 4: Also hide any backdrop/overlay
+			// Strategy 4: Also hide any visible backdrop/overlay. Only visible ones:
+			// YouTube keeps one backdrop node and reuses it for every dialog, so
+			// touching a dormant backdrop would affect unrelated future popups.
 			const backdrops = document.querySelectorAll(
 				'tp-yt-iron-overlay-backdrop, .scrim, iron-overlay-backdrop, [part="backdrop"]'
 			);
 			backdrops.forEach(backdrop => {
-				/** @type {HTMLElement} */(backdrop).style.setProperty('display', 'none', 'important');
-				/** @type {HTMLElement} */(backdrop).style.setProperty('opacity', '0', 'important');
+				if (isElementVisible(backdrop)) {
+					hideTemporarily(/** @type {HTMLElement} */(backdrop));
+				}
 			});
 
 			log('Dialog removal strategies applied');
@@ -490,47 +607,121 @@
 	// ============================================================================
 
 	/**
-	 * Get the main video element
+	 * Get the main video element.
+	 *
+	 * Scoped to the player on purpose. A bare 'video' selector also matches the
+	 * silent hover-preview players on the home page and in search results, which
+	 * this extension has no business touching.
 	 */
 	function getVideoElement() {
-		return safeQuerySelector('video.html5-main-video, #movie_player video, video');
+		return safeQuerySelector(
+			'video.html5-main-video, #movie_player video, .html5-video-player video'
+		);
 	}
 
 	/**
-	 * Check if video was paused unexpectedly (not by user)
-	 * and resume it if so
+	 * Resume playback, but only when this tab was demonstrably interrupted by
+	 * YouTube and the user has not paused the video themselves.
+	 */
+	function attemptResume(reason) {
+		if (!CONFIG.enabled || userPaused) return false;
+
+		const video = getVideoElement();
+		if (!video || !video.paused || video.ended || video.currentTime === 0) {
+			return false;
+		}
+
+		// A visible pause dialog right now, or one we removed moments ago, is the
+		// only evidence that accepts. Without it we leave the video alone.
+		const dialogFoundNow = scanAndRemoveDialogs();
+		const wasRecentlyHandled =
+			(Date.now() - lastInterruptionHandled) < CONFIG.INTERRUPTION_GRACE_MS;
+
+		if (!dialogFoundNow && !wasRecentlyHandled) return false;
+
+		if (resumeAttempts >= CONFIG.MAX_RESUME_ATTEMPTS) {
+			log('Resume attempt limit reached, standing down');
+			return false;
+		}
+
+		resumeAttempts++;
+		selfInitiatedPlayMs = Date.now();
+		log('Resuming video after interruption:', reason);
+		video.play().catch(e => {
+			log('Could not auto-resume video:', e);
+		});
+		return true;
+	}
+
+	/**
+	 * Fires whenever the video pauses, for any reason.
+	 */
+	function onVideoPause() {
+		if (!CONFIG.enabled) return;
+
+		// Interruption evidence wins: YouTube's own dialog is unambiguous.
+		if (attemptResume('pause event')) return;
+
+		// Otherwise, if a real input landed just before the pause, the human did
+		// it. Latch that until the video plays again — polling must not undo it.
+		if (wasUserInitiated()) {
+			userPaused = true;
+			log('User paused the video; auto-resume disabled until playback resumes');
+		}
+
+		// Neither case: unknown cause (media key, another extension, the OS media
+		// controls). Do nothing now. If YouTube's dialog shows up in the next few
+		// seconds, the periodic check will still catch it.
+	}
+
+	function onVideoPlay() {
+		userPaused = false;
+
+		// Only a play we did not cause clears the attempt counter. Otherwise a
+		// page that re-pauses immediately after every resume would reset the
+		// counter each round and the two of us would fight indefinitely.
+		if ((Date.now() - selfInitiatedPlayMs) > 1000) {
+			resumeAttempts = 0;
+		}
+	}
+
+	/**
+	 * Attach pause/play listeners to the current video element. YouTube swaps the
+	 * element on navigation, so this is re-run periodically and after SPA nav.
+	 */
+	function attachVideoListeners() {
+		const video = getVideoElement();
+		if (!video || video === observedVideo) return;
+
+		if (observedVideo) {
+			observedVideo.removeEventListener('pause', onVideoPause);
+			observedVideo.removeEventListener('play', onVideoPlay);
+		}
+
+		video.addEventListener('pause', onVideoPause);
+		video.addEventListener('play', onVideoPlay);
+		observedVideo = video;
+
+		// If the video is already paused at the moment we attach — a fresh page, a
+		// tab restored from a previous session, or the user re-enabling the
+		// extension — we did not see what paused it, so we must not undo it.
+		// The first genuine 'play' clears this again.
+		userPaused = video.paused;
+		resumeAttempts = 0;
+		log('Video listeners attached; already paused:', video.paused);
+	}
+
+	/**
+	 * Periodic backstop for the case where YouTube pauses the video first and
+	 * renders the dialog a moment later, so the pause event alone saw no evidence.
 	 */
 	function checkVideoState() {
 		if (!CONFIG.enabled) return;
 
 		try {
-			const video = getVideoElement();
-			if (!video) return;
-
-			// If video is paused, checks if we need to resume it
-			if (video.paused && !video.ended && video.currentTime > 0) {
-
-				// 1. Check for any dialogs right now
-				const dialogFoundNow = scanAndRemoveDialogs();
-
-				// 2. Determine if we should resume
-				// We resume IF we just found a dialog OR if we handled one very recently (last 2 seconds)
-				const timeSinceLastHandled = Date.now() - lastInterruptionHandled;
-				const wasRecentlyHandled = timeSinceLastHandled < 2000;
-
-				if (dialogFoundNow || wasRecentlyHandled) {
-					log('Resuming video (interruption detected/handled)');
-					video.play().catch(e => {
-						log('Could not auto-resume video:', e);
-					});
-				} else {
-					// Otherwise, assume it's a legitimate user pause and do nothing.
-					// We no longer rely on heuristics like checking for UI overlays, 
-					// which are prone to false negatives.
-				}
-			}
-
-
+			attachVideoListeners();
+			if (userPaused) return;
+			attemptResume('periodic check');
 		} catch (error) {
 			log('Error checking video state:', error);
 		}
@@ -548,6 +739,9 @@
 
 		// Setup DOM monitoring
 		setupDOMObserver();
+
+		// Watch the video element's own pause/play events
+		attachVideoListeners();
 
 		// Setup periodic activity simulation (every 1 minute)
 		if (activityIntervalId) clearInterval(activityIntervalId);
@@ -590,6 +784,12 @@
 			scanIntervalId = null;
 		}
 
+		if (observedVideo) {
+			observedVideo.removeEventListener('pause', onVideoPause);
+			observedVideo.removeEventListener('play', onVideoPlay);
+			observedVideo = null;
+		}
+
 		log('All monitoring systems stopped');
 	}
 
@@ -599,12 +799,23 @@
 	function init() {
 		log('Initializing YouTube Uninterrupted extension');
 
-		// Track user interactions so we can distinguish user-triggered dialogs
-		// (e.g. "Unsubscribe?", "Delete comment?") from YouTube's automatic idle
-		// dialogs. Capture phase ensures we catch clicks before they reach targets.
-		document.addEventListener('click', () => {
-			lastUserInteractionMs = Date.now();
-		}, true);
+		// Track user interactions, for two purposes: telling user-triggered dialogs
+		// (e.g. "Unsubscribe?", "Delete comment?") apart from YouTube's automatic
+		// idle dialog, and recognising a pause the user performed themselves.
+		//
+		// Keyboard events matter as much as clicks here — space and 'k' are the
+		// usual way to pause a YouTube video and produce no click at all.
+		//
+		// Only trusted events count. Layer 3 dispatches synthetic input of its own,
+		// and those must never be mistaken for the user.
+		// Capture phase ensures we see the event before page handlers do.
+		const noteUserInteraction = (event) => {
+			if (event.isTrusted) lastUserInteractionMs = Date.now();
+		};
+
+		['pointerdown', 'click', 'keydown'].forEach(type => {
+			document.addEventListener(type, noteUserInteraction, { capture: true, passive: true });
+		});
 
 		// Load extension state from storage
 		browser.storage.local.get(['enabled']).then(result => {
@@ -654,7 +865,10 @@
 		window.addEventListener('yt-navigate-finish', () => {
 			if (CONFIG.enabled) {
 				log('YouTube navigation detected, scanning for dialogs');
-				setTimeout(scanAndRemoveDialogs, 500);
+				setTimeout(() => {
+					attachVideoListeners();
+					scanAndRemoveDialogs();
+				}, 500);
 			}
 		});
 

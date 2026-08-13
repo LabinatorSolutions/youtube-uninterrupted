@@ -73,4 +73,13 @@ browser.storage.onChanged.addListener((changes, area) => {
 	}
 });
 
+// Restore the badge on startup. Without this the "OFF" badge disappears after a
+// browser restart even though the extension is still disabled.
+browser.storage.local.get(['enabled']).then(result => {
+	extensionState.enabled = result.enabled !== false;
+	updateIcon(extensionState.enabled);
+}).catch(() => {
+	// Storage unavailable; leave the badge at its default.
+});
+
 console.log('[YouTube Uninterrupted] Background service worker initialized');
