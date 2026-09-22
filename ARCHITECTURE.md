@@ -86,15 +86,28 @@ Simulates user activity to prevent the dialog from triggering in the first place
 
 **How it works**:
 
-- Dispatches `mousemove` events every 60 seconds
+- Dispatches one `mousemove` every 60 seconds
 - Uses random coordinates within viewport
-- Occasionally dispatches `scroll` events for variety
-- Targets both document and video player element
+- Targets `document` and **only** `document`
 
-**Code location**: Lines 443-484 in `content-scripts/youtube-uninterrupted.js`
+**Code location**: `simulateActivity()` in `content-scripts/youtube-uninterrupted.js`
 
-**Why needed**: YouTube tracks user inactivity and shows the dialog after ~2 hours of no interaction. Simulated activity
-resets this timer.
+**Why needed**: YouTube tracks user inactivity and shows the dialog after a long stretch of no interaction. Simulated
+activity resets this timer.
+
+**Never target the player.** Measured against youtube.com on 2026-09-22:
+
+| Dispatch target | Coordinates | Clears `ytp-autohide`? |
+| --- | --- | --- |
+| `#movie_player` | new each tick | **Yes** — shipped in 1.6.1, user-reported |
+| `#movie_player` | repeated | No |
+| `document` | new each tick | No |
+| `document` (`scroll`) | n/a | No |
+
+YouTube binds the control-bar reveal to a `mousemove` listener on `#movie_player` and suppresses only a move whose
+coordinates repeat the previous one. Randomised coordinates aimed at the player therefore popped the controls, and the
+fullscreen cursor, into view once a minute. The player dispatch and the decorative `scroll` event were both removed in
+1.6.2; `tests/pause-behavior.mjs` asserts no synthetic event ever reaches the player subtree.
 
 **Security**: Uses `crypto.getRandomValues()` for random coordinates (no `Math.random()`).
 

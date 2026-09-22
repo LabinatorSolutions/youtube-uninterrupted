@@ -87,7 +87,7 @@ youtube-uninterrupted/
 - `isPauseDialog(element)` - Verifies element is the target dialog
 - `removePauseDialog(element)` - Removes/hides dialog
 - `setupDOMObserver()` - Watches for new dialog insertions
-- `simulateActivity()` - Dispatches mouse events to reset timer
+- `simulateActivity()` - Dispatches one `document`-level mouse event to reset timer
 
 **Configuration Object:**
 
@@ -174,9 +174,11 @@ const observer = new MutationObserver((mutations) => {
 ```javascript
 setInterval(() => {
   const event = new MouseEvent('mousemove', {...});
-  document.dispatchEvent(event);
+  document.dispatchEvent(event);   // document ONLY - never #movie_player
 }, 60 * 1000); // Every minute
 ```
+
+Dispatching this at `#movie_player` reveals YouTube's control bar on every tick. See ARCHITECTURE.md, Layer 3.
 
 - Prevents dialog from triggering
 - Simulates user activity

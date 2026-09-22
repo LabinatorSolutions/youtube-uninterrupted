@@ -171,7 +171,7 @@ Use this checklist to verify the YouTube Uninterrupted extension is working corr
   - [ ] Open browser console (F12)
   - [ ] Verify logs appear: `[YouTube Uninterrupted] Initializing...`
   - [ ] Should see: `[YouTube Uninterrupted] DOM observer initialized`
-  - [ ] Should see: `[YouTube Uninterrupted] Activity simulator initialized`
+  - [ ] Should see: `[YouTube Uninterrupted] All monitoring systems active`
 
 - [ ] **Monitor During Playback**
   - [ ] Watch console during video playback
@@ -199,6 +199,13 @@ Use this checklist to verify the YouTube Uninterrupted extension is working corr
   - [ ] Android (if applicable)
 
 ## User Experience Tests
+
+- [ ] **Player Chrome Stays Hidden (regression, fixed in 1.6.2)**
+  - [ ] Start a video, move the mouse off the player, and leave it untouched for 5 minutes
+  - [ ] Control bar must fade out and **stay** out — it must not reappear on any interval
+  - [ ] Repeat in fullscreen: the mouse cursor must stay hidden too
+  - [ ] In DevTools, confirm `#movie_player` never gains/loses `ytp-autohide` on its own
+  - [ ] Covered automatically by `bun run test:e2e`, but the visual check is the real gate
 
 - [ ] **Popup Design**
   - [ ] Popup opens quickly (<100ms)

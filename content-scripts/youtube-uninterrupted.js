@@ -559,45 +559,44 @@
 	// ============================================================================
 
 	/**
-	 * Simulate user activity to reset YouTube's idle timer
-	 * Uses multiple event types for reliability
+	 * Reset YouTube's idle timer with a synthetic pointer move.
+	 *
+	 * Dispatch to `document` ONLY. Never to #movie_player, and never to anything
+	 * inside the player.
+	 *
+	 * The player's control bar is shown by a mousemove listener bound to
+	 * #movie_player itself, and YouTube suppresses a move whose coordinates
+	 * repeat the previous one. A freshly randomised mousemove aimed at the player
+	 * therefore clears `ytp-autohide` and pops the controls — and, in fullscreen,
+	 * the mouse cursor — into view on every single tick. Measured against
+	 * youtube.com on 2026-09-22:
+	 *
+	 *   dispatch target        coordinates   ytp-autohide cleared?
+	 *   #movie_player          new           YES  <- the 1.6.1 bug, user-reported
+	 *   #movie_player          repeated      no
+	 *   document               new           no
+	 *   document ('scroll')    n/a           no
+	 *
+	 * The player dispatch was the entire reported fault, and the occasional
+	 * `scroll` event alongside it was never measurably anything but noise that
+	 * could still drive YouTube's own scroll-linked chrome. Both are gone. The
+	 * document-level mousemove is the only dispatch here that the player chrome
+	 * cannot see.
 	 */
 	function simulateActivity() {
 		if (!CONFIG.enabled) return;
 
 		try {
-			// Get a random position within viewport for more realistic events
 			const x = Math.floor(secureRandom() * window.innerWidth);
 			const y = Math.floor(secureRandom() * window.innerHeight);
 
-			// Simulate mouse movement
-			const mouseMoveEvent = new MouseEvent('mousemove', {
+			document.dispatchEvent(new MouseEvent('mousemove', {
 				bubbles: true,
 				cancelable: false,
 				view: window,
 				clientX: x,
 				clientY: y
-			});
-			document.dispatchEvent(mouseMoveEvent);
-
-			// Occasionally simulate other events for variety
-			if (secureRandom() < 0.3) {
-				const scrollEvent = new Event('scroll', { bubbles: true });
-				document.dispatchEvent(scrollEvent);
-			}
-
-			// Dispatch to video player specifically
-			const player = safeQuerySelector('#movie_player, .html5-video-player');
-			if (player) {
-				const playerEvent = new MouseEvent('mousemove', {
-					bubbles: true,
-					cancelable: false,
-					view: window,
-					clientX: x,
-					clientY: y
-				});
-				player.dispatchEvent(playerEvent);
-			}
+			}));
 
 			log('Activity simulated at:', x, y);
 		} catch (error) {

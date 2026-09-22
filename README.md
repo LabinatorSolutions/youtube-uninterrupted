@@ -52,8 +52,13 @@ unsubscribe confirmations and similar user-initiated flows.
 
 ### Layer 3: Activity Simulation
 
-Periodically simulates minimal user activity (mouse movement event) every minute to reset YouTube's idle timer,
-preventing the dialog from triggering in the first place.
+Dispatches one synthetic `mousemove` on `document` every minute to reset YouTube's idle timer, so the dialog is less
+likely to trigger in the first place.
+
+The event goes to `document` and nowhere else. It is deliberately never dispatched at `#movie_player`: YouTube shows
+the player control bar from a `mousemove` listener bound to that element, so aiming synthetic movement at the player
+makes the controls — and, in fullscreen, the mouse cursor — flash into view on every tick. That was the behaviour
+reported against 1.6.1 and fixed in 1.6.2.
 
 ### Layer 4: Playback Recovery
 
@@ -295,9 +300,9 @@ The extension implements four defensive layers:
 
 **Layer 3: Activity Simulation (`youtube-uninterrupted.js`)**
 
-- Dispatches mouse movement events every minute
+- Dispatches one `mousemove` on `document` every minute
 - Resets YouTube's idle timer
-- Prevents dialog from triggering in the first place
+- Never dispatches into the player subtree, so the control bar is never revealed
 - Non-intrusive, doesn't interfere with actual user actions
 
 ### Performance

@@ -264,6 +264,63 @@ async function runRepeatedInterruptions(browser) {
 	);
 }
 
+/**
+ * Layer 3 must never reach the player.
+ *
+ * Shipped in 1.6.1 and reported by a user as "continuously pops up the video
+ * player tools": simulateActivity() dispatched a freshly randomised mousemove
+ * straight at #movie_player every 60s. YouTube shows the control bar from a
+ * mousemove listener bound to that element and only ignores a move whose
+ * coordinates repeat, so every tick cleared `ytp-autohide` and flashed the
+ * chrome — and the cursor in fullscreen — over the video.
+ *
+ * The fixture cannot assert on `ytp-autohide` (that class is YouTube's own
+ * player code, which is not present here), so it asserts the cause instead: no
+ * synthetic pointer event of any kind may be delivered to the player subtree,
+ * while the document-level tick must still fire so the layer is proven alive
+ * rather than merely silent.
+ *
+ * ACTIVITY_INTERVAL_MS is patched down from 60s so the test runs in a second.
+ */
+async function runActivityNeverTouchesPlayer(browser) {
+	const fast = SRC.replace('ACTIVITY_INTERVAL_MS: 60 * 1000', 'ACTIVITY_INTERVAL_MS: 250');
+	if (fast === SRC) throw new Error('could not patch ACTIVITY_INTERVAL_MS - test is not measuring anything');
+
+	const page = await browser.newPage();
+	await page.setContent(pageHtml(''));
+	await instrument(page);
+
+	await page.evaluate(() => {
+		window.__playerEvents = [];
+		window.__documentMoves = 0;
+		const player = document.querySelector('#movie_player');
+		for (const type of ['mousemove', 'mousedown', 'mouseup', 'click', 'pointermove', 'scroll']) {
+			player.addEventListener(type, (e) => {
+				if (!e.isTrusted) window.__playerEvents.push(type);
+			}, true);
+		}
+		document.addEventListener('mousemove', (e) => {
+			if (!e.isTrusted && e.target === document) window.__documentMoves++;
+		}, true);
+	});
+
+	await page.evaluate(fast);
+	await page.evaluate(() => window.__startPlaying());
+	await page.waitForTimeout(1500);                            // ~5 activity ticks
+
+	const out = await page.evaluate(() => ({
+		player: window.__playerEvents,
+		document: window.__documentMoves
+	}));
+	await page.close();
+
+	record(
+		'activity simulation never dispatches into the player (control bar stays hidden)',
+		out.player.length === 0 && out.document >= 3,
+		`synthetic events reaching #movie_player: ${out.player.length ? out.player.join(',') : 'none'}; document ticks: ${out.document}`
+	);
+}
+
 // ============================================================================
 // RUNNER
 // ============================================================================
@@ -293,6 +350,7 @@ try {
 	await runNodeReuse(browser);
 	await runPauseInsideGrace(browser);
 	await runRepeatedInterruptions(browser);
+	await runActivityNeverTouchesPlayer(browser);
 } finally {
 	await browser.close();
 }
