@@ -200,7 +200,7 @@ Use this checklist to verify the YouTube Uninterrupted extension is working corr
 
 ## User Experience Tests
 
-- [ ] **Player Chrome Stays Hidden (regression, fixed in 1.6.2)**
+- [ ] **Player Chrome Stays Hidden (regression, fixed in 1.6.3)**
   - [ ] Start a video, move the mouse off the player, and leave it untouched for 5 minutes
   - [ ] Control bar must fade out and **stay** out — it must not reappear on any interval
   - [ ] Repeat in fullscreen: the mouse cursor must stay hidden too

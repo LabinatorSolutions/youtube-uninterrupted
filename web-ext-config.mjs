@@ -26,7 +26,9 @@ export default {
 		'tests/**',
 
 		// Repository documentation (the AMO listing carries the user-facing text)
+		'AMO-1.6.3.html',
 		'ANDROID-INSTALLATION.md',
+		'CHANGELOG.md',
 		'ARCHITECTURE.md',
 		'CODE_OF_CONDUCT.md',
 		'CONTRIBUTING.md',

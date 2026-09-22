@@ -58,7 +58,7 @@ likely to trigger in the first place.
 The event goes to `document` and nowhere else. It is deliberately never dispatched at `#movie_player`: YouTube shows
 the player control bar from a `mousemove` listener bound to that element, so aiming synthetic movement at the player
 makes the controls — and, in fullscreen, the mouse cursor — flash into view on every tick. That was the behaviour
-reported against 1.6.1 and fixed in 1.6.2.
+reported against 1.6.1 and fixed in 1.6.3.
 
 ### Layer 4: Playback Recovery
 

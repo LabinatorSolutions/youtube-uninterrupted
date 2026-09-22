@@ -1,0 +1,47 @@
+<p><strong>YouTube Uninterrupted 1.6.3 — AMO submission drafts</strong></p>
+
+<p>Two drafts. The first goes in the AMO <strong>Release Notes</strong> field for version 1.6.3. The second is the
+public reply to the user who reported the control-bar bug. AMO's release-notes field accepts this tag set, so the
+first block can be pasted as-is; the review reply box is plain text, so paste that one without the tags.</p>
+
+<p><strong>1. AMO release notes (paste into the Release Notes field)</strong></p>
+
+<p><strong>Fixed: the player controls no longer pop up on their own while you watch.</strong></p>
+
+<p>To stop YouTube pausing long videos, the extension refreshes YouTube's idle timer about once a minute. In 1.6.1
+that refresh was aimed at the video player itself — and a pointer movement over the player is exactly what makes
+YouTube reveal the control bar. The result was the control bar, and the mouse cursor in fullscreen, flashing into
+view roughly every 60 seconds during playback.</p>
+
+<p>The refresh now targets the page only and never touches the player, so the controls stay hidden until you
+actually move the mouse. A redundant synthetic scroll event was removed at the same time.</p>
+
+<ul>
+  <li>No changes to how the "Continue watching?" dialog is detected or dismissed.</li>
+  <li>No changes to playback recovery.</li>
+  <li>No new permissions, and no data is collected.</li>
+  <li>An automated test now guards this behaviour so it cannot silently return.</li>
+</ul>
+
+<p>Thanks to the user who reported this.</p>
+
+<p><strong>2. Reply to the reporter (paste as plain text into the review reply box)</strong></p>
+
+<p>Thank you for reporting this — you were right, and it was a real bug on our side, not a problem with your
+setup.</p>
+
+<p>To keep YouTube from pausing long videos, the extension refreshes YouTube's idle timer about once a minute. In
+1.6.1 that refresh was being aimed at the video player itself, which is exactly what makes YouTube show the control
+bar. So the controls, and the mouse cursor in fullscreen, reappeared roughly every 60 seconds while you were
+watching. That matches your description precisely.</p>
+
+<p>Version 1.6.3 fixes it. The refresh now goes to the page only and never touches the player. We reproduced the
+problem, confirmed the fix against YouTube directly, and added an automated test so it cannot come back unnoticed.
+Dialog blocking and playback recovery are unchanged.</p>
+
+<p>The update should reach you automatically within a day or so. To get it immediately, open
+<strong>about:addons</strong>, click the gear icon at the top right, and choose <strong>Check for Updates</strong>.
+You can confirm you are on 1.6.3 on the extension's detail page in that same tab.</p>
+
+<p>Sorry for the annoyance, and thanks for taking the time to tell us — this one was hard to spot from our side
+because every automated check passed.</p>

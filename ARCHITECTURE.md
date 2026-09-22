@@ -107,7 +107,7 @@ activity resets this timer.
 YouTube binds the control-bar reveal to a `mousemove` listener on `#movie_player` and suppresses only a move whose
 coordinates repeat the previous one. Randomised coordinates aimed at the player therefore popped the controls, and the
 fullscreen cursor, into view once a minute. The player dispatch and the decorative `scroll` event were both removed in
-1.6.2; `tests/pause-behavior.mjs` asserts no synthetic event ever reaches the player subtree.
+1.6.3; `tests/pause-behavior.mjs` asserts no synthetic event ever reaches the player subtree.
 
 **Security**: Uses `crypto.getRandomValues()` for random coordinates (no `Math.random()`).
 
