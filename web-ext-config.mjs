@@ -14,6 +14,9 @@
 
 export default {
 	ignoreFiles: [
+    // AMO listing assets (icon, screenshots, store text) are uploaded separately.
+    'amo',
+    'amo/**',
 		// Tooling and dependency management
 		'package.json',
 		'bun.lock',
