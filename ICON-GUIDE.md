@@ -19,64 +19,48 @@ this image to all necessary sizes (16px, 32px, 48px, 64px, 128px), ensuring cris
 
 ## Design Recommendations
 
-### Visual Concept
+### Labinator icon system
 
-The icon should represent:
+This add-on is published by Labinator, and every Labinator add-on shares one icon system taken from the Labinator
+design system (`labinator-website/DESIGN.md`):
 
-- **YouTube** (incorporate red color `#FF0000`)
-- **"Continue" or "Play"** concept
-- **Simple shapes** that remain readable when scaled down to 16x16px (toolbar size)
+- **Plate:** a full-bleed square in Labinator ultramarine `#2400ff`. Square corners, no radius, matching the
+  labinator.com favicon.
+- **Glyph:** flat white `#ffffff` geometry, plus ultramarine cut-outs where a shape needs an inner detail.
+- **Banned:** gradients, shadows, filters, rounded corners, and any color outside ultramarine and white. That
+  includes YouTube red.
+- **Legibility:** the glyph must still read at 16x16 px in the toolbar. Use at most two or three solid shapes.
 
-### Suggested Design Ideas
+### This add-on's glyph
 
-#### Option 1: Play Button with Continue Arrow
+A white play triangle with an unbroken white bar running from its tip to the right edge: playback that carries on
+without interruption. The three Labinator YouTube add-ons share the play triangle and differ in what sits beside
+it:
 
-- Red circle background (`#FF0000`)
-- White play triangle (▶)
-- Small green checkmark overlay
-
-#### Option 2: YouTube Logo Variation
-
-- Stylized play button
-- Red and white color scheme
-- Minimalist design
-
-#### Option 3: Abstract Continuous Symbol
-
-- Circular arrows (♻) or infinity symbol (∞)
-- YouTube red color
-- Clean, modern look
+| Add-on | Glyph |
+|---|---|
+| YouTube Uninterrupted | Play triangle + one unbroken bar |
+| Quick YouTube Summary with Gemini | Play triangle + three text lines |
+| Play YouTube Video in Background | Play triangle on a front window, with a second window behind it |
 
 ## Creating Your SVG
 
-### Using Design Tools
-
-**Figma / Adobe Illustrator / Inkscape:**
-
-1. Create a square artboard (e.g., 128x128 or 512x512).
-2. Design using vector shapes.
-3. Combine paths where possible (minimize complex groups).
-4. **Export as SVG**.
-5. Ensure strict standard SVG code (avoid tool-specific metadata).
-
-**Coding Manually:**
-SVGs are just XML. You can write them by hand!
+Write the SVG by hand on a 128x128 grid and keep it to plain paths:
 
 ```xml
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- Red Background Circle -->
-  <circle cx="64" cy="64" r="60" fill="#FF0000" />
-  
-  <!-- White Play Triangle -->
-  <path d="M50 40 L50 88 L88 64 Z" fill="#FFFFFF" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <title>YouTube Uninterrupted</title>
+  <rect width="128" height="128" fill="#2400ff"/>
+  <path d="M16 34v60l44-30z" fill="#ffffff"/>
+  <path d="M60 56h52v16H60z" fill="#ffffff"/>
 </svg>
 ```
 
 ### Constraints & Best Practices
 
 - **Aspect Ratio**: Must be 1:1 (Square).
-- **Padding**: Leave a small margin (padding) around your main shape so it doesn't get cut off when rounded.
-- **Complexity**: Keep it simple. Avoid complex filters/gradients if possible, as small sizes won't show them well.
+- **Padding**: The plate fills the whole square. Keep the glyph about 16 units inside the edges.
+- **Complexity**: Use flat fills only. Small sizes lose fine detail.
 - **Testing**: Test at 16px size to ensure visibility.
 
 ## Installation

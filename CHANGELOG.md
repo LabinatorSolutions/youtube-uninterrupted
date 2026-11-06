@@ -4,6 +4,20 @@ All notable changes to YouTube Uninterrupted are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.4] - 2026-11-06
+
+### Changed
+
+- **Requires Firefox 159 or newer** (desktop and Android). `strict_min_version` is now `159.0`, up from `153.0`. Older
+  Firefox releases carry known, unpatched security vulnerabilities. Users on an older Firefox stay on 1.6.3 until they
+  update their browser.
+- New toolbar icon in the Labinator icon system: a white play triangle and an unbroken bar on an ultramarine square,
+  replacing the red circle and green checkmark.
+
+### Unchanged
+
+- Extension code is identical to 1.6.3. No new permissions.
+
 ## [1.6.3] - 2026-09-22
 
 ### Fixed

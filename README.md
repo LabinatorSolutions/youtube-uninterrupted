@@ -316,8 +316,8 @@ The extension implements four defensive layers:
 
 | Platform        | Minimum Version | Status          |
 | --------------- | --------------- | --------------- |
-| Firefox Desktop | 153.0           | Fully supported |
-| Firefox Android | 153.0           | Fully supported |
+| Firefox Desktop | 159.0           | Fully supported |
+| Firefox Android | 159.0           | Fully supported |
 | Firefox Nightly | Latest          | Fully supported |
 
 ## Contributing

@@ -6,7 +6,8 @@ Use the latest version of the extension to ensure you have the most up-to-date s
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.5.0   | :white_check_mark: |
+| 1.6.x   | :white_check_mark: |
+| < 1.6   | :x:                |
 
 ## Reporting a Vulnerability
 
